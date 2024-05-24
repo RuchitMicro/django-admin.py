@@ -1,6 +1,9 @@
 from django.contrib             import admin
 from django.forms.models        import modelform_factory
 from django.utils.translation   import gettext_lazy as _
+from django.forms               import widgets
+from django.utils.safestring    import mark_safe
+from django.db                  import models
 
 # Imports for Dynamic app registrations
 from django.apps            import apps
@@ -20,7 +23,74 @@ exempt                  = [] # modelname in this list will not be registered
 global_app_name         = 'web' # Replace '' with your app name
 
 
-# ADMIN.PY MAIN CODE
+
+
+# Json Editor Widget
+# https://github.com/json-editor/json-editor
+class JsonEditorWidget(widgets.Widget):
+    template_name = 'json_editor_widget.html'
+
+    def __init__(self, schema, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schema = schema
+
+    def render(self, name, value, attrs=None, renderer=None):
+        # Convert Python dictionary to JSON string
+        json_value = value if value else '{}'
+        # Render the JSON Editor
+        style = '''
+        .form-row {
+            overflow: visible !important;
+        }
+        .je-switcher{
+            margin-left: 0px !important;
+        }
+        .je-ready button{
+            padding: 5px 10px !important;
+            border: 1px solid grey !important;
+        }
+        .je-ready button i{
+            margin-right: 5px !important;
+            margin-left: 5px !important;
+        }
+        .je-indented-panel{
+            border-radius: 0px !important;
+            padding: 20px 15px !important;
+        }
+        '''
+        return mark_safe(f'''
+
+            <!-- FontAwesome CSS -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+            <!-- JSON Editor CSS -->
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.css">
+
+            <!-- JSON Editor JS -->
+            <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+
+            <style>{style}</style>
+            <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+            <textarea name="{name}" id="tx_{attrs['id']}" style="display:none;">{json_value}</textarea>
+            <div id="editor_{attrs['id']}"></div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {{
+                    var editor = new JSONEditor(document.getElementById("editor_{attrs['id']}"), {{
+                        schema: {self.schema},
+                        startval: {json_value},
+                        theme: 'html',
+                        iconlib: 'fontawesome5',
+                    }});
+                    editor.on('change', function() {{
+                        console.log("Change event triggered");
+                        console.log("Editor Value:", editor.getValue());
+                        document.getElementById("tx_{attrs['id']}").value = JSON.stringify(editor.getValue());
+                    }});
+                }});
+            </script>
+        ''')
+
+
 class GenericStackedAdmin(admin.StackedInline):
     extra = 1
     # This method ensures the field order is correct for inlines as well
@@ -106,6 +176,23 @@ class GenericAdmin(admin.ModelAdmin):
 
         return fieldsets
     
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        # Check if the field is a JSONField
+        if isinstance(db_field, models.JSONField) and self.admin_meta:
+            # Retrieve the schema configuration for JSON fields
+            json_fields_meta = self.model.admin_meta.get('json_fields', {})
+
+            # Retrieve the schema for the specific field, if defined
+            json_schema = json_fields_meta.get(db_field.name, {}).get('schema')
+
+            if json_schema:
+                # Initialize the custom widget with the specified schema
+                kwargs['widget'] = JsonEditorWidget(schema=json_schema)
+            # else:                                                                                         # Patch this later
+            #     # Else load the django-jsoneditor widget 
+            #     kwargs['widget'] = JSONEditor()
+
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
     
     def get_readonly_fields(self, request, obj=None):
         # Get a list of non-editable fields
