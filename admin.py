@@ -1,15 +1,17 @@
-from django.contrib import admin
-from django.forms.models import modelform_factory
+from django.contrib             import admin
+from django.forms.models        import modelform_factory
+from django.utils.translation   import gettext_lazy as _
 
 # Imports for Dynamic app registrations
 from django.apps            import apps
 
-# Models
-from web.models             import *
 
-# Json Widget
-# from web.widget                import JsonEditorWidget
-
+# Common Model
+try:
+    from .models import CommonModel
+    COMMON_MODEL_AVAILABLE = True
+except ImportError:
+    COMMON_MODEL_AVAILABLE = False
 
 
 # CONFIG CONSTANTS
@@ -21,14 +23,17 @@ global_app_name         = 'web' # Replace '' with your app name
 # ADMIN.PY MAIN CODE
 class GenericStackedAdmin(admin.StackedInline):
     extra = 1
-
     # This method ensures the field order is correct for inlines as well
     def get_formset(self, request, obj=None, **kwargs):
-        formset             =   super().get_formset(request, obj, **kwargs)
-        form                =   formset.form
-        custom_order        =   [field for field in form.base_fields if field not in CommonModel._meta.fields]
-        custom_order        +=  [field for field in CommonModel._meta.fields if field in form.base_fields]
-        form.base_fields    =   {field: form.base_fields[field] for field in custom_order}
+        formset = super().get_formset(request, obj, **kwargs)
+        form = formset.form
+        custom_order = [field for field in form.base_fields]
+        
+        if COMMON_MODEL_AVAILABLE:
+            custom_order = [field for field in form.base_fields if field not in CommonModel._meta.fields]
+            custom_order += [field for field in CommonModel._meta.fields if field in form.base_fields]
+        
+        form.base_fields = {field: form.base_fields[field] for field in custom_order}
         return formset
 
 
@@ -68,32 +73,17 @@ class GenericAdmin(admin.ModelAdmin):
 
         super().__init__(model, admin_site)
         
-    def formfield_for_dbfield(self, db_field, request, **kwargs):
-        # Check if the field is a JSONField
-        if isinstance(db_field, models.JSONField) and self.admin_meta:
-            # Retrieve the schema configuration for JSON fields
-            json_fields_meta = self.model.admin_meta.get('json_fields', {})
-
-            # Retrieve the schema for the specific field, if defined
-            json_schema = json_fields_meta.get(db_field.name, {}).get('schema')
-
-            if json_schema:
-                # Initialize the custom widget with the specified schema
-                kwargs['widget'] = JsonEditorWidget(schema=json_schema)
-            else:
-                # Else load the django-jsoneditor widget 
-                kwargs['widget'] = JSONEditor()
-
-        return super().formfield_for_dbfield(db_field, request, **kwargs)
-
     # Function to get the fieldsets
     def get_fieldsets(self, request, obj=None):
         if 'fieldsets' in self.admin_meta:
             return self.admin_meta['fieldsets']
 
         common_fields = []
-        if issubclass(self.model, CommonModel):
-            common_fields = [field.name for field in CommonModel._meta.fields if field.editable]
+        try:
+            if issubclass(self.model, CommonModel):
+                common_fields = [field.name for field in CommonModel._meta.fields if field.editable]
+        except:
+            common_fields = []
 
         other_fields = [field.name for field in self.model._meta.fields if field.name not in common_fields and field.editable and field.name != 'id']
         m2m_fields = [field.name for field in self.model._meta.many_to_many]
