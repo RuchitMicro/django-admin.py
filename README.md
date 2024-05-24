@@ -1,16 +1,23 @@
 
-# WOLFx Admin Configuration
+# Welcome to the WOLFx Admin Configuration repository! 🚀
+WOLFx Admin configuration is created to improve the developer experience by simplifying the process of registering models in the admin site. This powerful tool is designed to automate admin registrations but it does not compromise the features that Django's default admin site provides. You can control the admin interface directly from your `models.py` file using a simple `admin_meta` dictionary. This approach eliminates the need for repetitive tasks associated with traditional model registration and allows for direct control over the admin interface, keeping your configurations closely tied to your model definitions.
 
-This repository contains the configuration for the WOLFx Admin interface. Below are the instructions and details to understand and extend the functionality of the admin interface.
+## Key Features
+1. **Automated Model Registration: Automatically register your models in the Django admin site without the hassle of manually creating admin classes.**
+2. **Direct Control from Models: Manage your admin configurations right next to your model definitions using the admin_meta dictionary.**
+3. **Maintains Django Admin Features: Retain all the robust features offered by Django's default admin site while enjoying the benefits of simplified management.**
 
-## Usage
-
+## Usage 
 1. **Place the code in the `admin.py` file of your Django application.**
 2. **Adjust the configuration constants as needed.**
 3. **Define `admin_meta` in your models to customize the admin interface.**
 
-## Example Model Configuration 🛠️
+## NOTE: Configuration Constants 📌
+- `admin.site.site_header`: Sets the header for the admin site.
+- `exempt`: A list of model names that should not be registered with the admin. Note that the model_name should be used and not model itself, to understand better uncomment the `print(model_name + ' '  + str(model))` in the second last line of the code to see what is the actual model_name of your model
+- `global_app_name`: The name of the application. This constant determines from which app it needs to pull the models for auto-registration. As every app has its admin.py, this constant's value should be the name of its own app. For example if your app name is `web` and the admin.py belongs to this app then the value of this constant should be `web`
 
+## Example Model Configuration 🛠️
 Here's an example of how you can define your models to leverage the dynamic admin interface:
 
 ```python
@@ -77,8 +84,7 @@ class BlogImage(CommonModel):
 ```
 
 ### Using `admin_meta` Dictionary
-
-You can control the admin interface directly from your `models.py` using the `admin_meta` dictionary. Here are some key attributes you can define:
+You can control the admin interface directly from your `models.py` using the `admin_meta` dictionary. Here are some key attributes you can define but are not limited to:
 
 - **`list_display`**: Specify fields to be displayed in the list view.
 - **`list_editable`**: Fields that can be edited directly in the list view.
@@ -86,8 +92,7 @@ You can control the admin interface directly from your `models.py` using the `ad
 - **`inline`**: Define inline models to be displayed.
 
 ### Example with JSONField Schema
-
-If you have a JSONField in your model, you can customize its form field using a schema:
+If you have a JSONField in your model, you can customize its form field using a schema, note that this makes use of another [open-source project](https://github.com/json-editor/json-editor) and in this version, it's been muted:
 
 ```python
 class MyModel(models.Model):
@@ -123,7 +128,6 @@ class MyModel(models.Model):
 ```
 
 ### JSON Editor Widget
-
 The `JsonEditorWidget` class is used to render JSON fields with a user-friendly JSON editor:
 
 ```python
@@ -156,63 +160,15 @@ class JsonEditorWidget(widgets.Widget):
         ''')
 ```
 
-## Note 📌
+## What is WOLFx?
+[WOLFx Digital Agency](https://wolfx.io) is a premier IT development company located in the financial capital of India, Mumbai. We specialize in delivering cutting-edge technology solutions and IT services, catering to businesses across various domains and helping them thrive in a digital landscape. Our services include custom software development, web and mobile application development, IT consulting, IT Outsourcing/Staffing, and Digital transformation.
 
-Make sure to replace `'web'` with your actual app name in the `global_app_name` variable.
+In addition to our commercial endeavors, WOLFx Digital Agency is deeply committed to the open-source community. We actively contribute to open-source projects, sharing our expertise and innovations with the wider tech community. 
 
-## Configuration Constants
+## Contribution
+We welcome contributions to improve and expand the capabilities of WOLFx Admin Configuration. Please feel free to submit issues, feature requests, or pull requests.
 
-- `admin.site.site_header`: Sets the header for the admin site.
-- `exempt`: A list of model names that should not be registered with the admin.
-- `global_app_name`: The name of the application.
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-## GenericStackedAdmin Class
-
-This class is used for inline models in the admin interface.
-
-### get_formset
-
-This method ensures the field order is correct for inlines.
-
-## GenericAdmin Class
-
-This class provides a dynamic admin interface for models.
-
-### __init__
-
-- Initializes the admin interface for the model.
-- Registers inlines and actions dynamically based on model attributes.
-
-### formfield_for_dbfield
-
-- Customizes the form field for JSONField using a schema if defined in the model's admin_meta.
-
-### get_fieldsets
-
-- Defines fieldsets for the admin interface.
-- If fieldsets are defined in admin_meta, those are used.
-
-### get_readonly_fields
-
-- Returns a list of non-editable fields.
-
-### add_action
-
-- Adds an action to the admin interface.
-
-### register_inlines
-
-- Registers inlines for the admin interface.
-
-### add_inline
-
-- Adds an inline model to the admin interface.
-
-## Dynamic App Registrations
-
-The models from the specified application are dynamically registered to the admin interface unless they are in the exempt list or have 'histor' in their name.
-
-## Media
-
-Custom media files can be included using the Media class.
 
