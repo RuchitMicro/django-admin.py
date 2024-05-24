@@ -88,26 +88,34 @@ class GenericAdmin(admin.ModelAdmin):
 
     # Function to get the fieldsets
     def get_fieldsets(self, request, obj=None):
-        # If admin meta has fieldssets defined then return that fieldsets
         if 'fieldsets' in self.admin_meta:
             return self.admin_meta['fieldsets']
 
-        # Define the fieldsets
-        common_fields   =   [field.name for field in CommonModel._meta.fields if field.editable]
-        other_fields    =   [field.name for field in self.model._meta.fields if (field.name not in common_fields and field.editable and field.name != 'id')]
-        m2m_fields      =   [field.name for field in self.model._meta.many_to_many]
-        other_fields    =   other_fields + m2m_fields
+        common_fields = []
+        if issubclass(self.model, CommonModel):
+            common_fields = [field.name for field in CommonModel._meta.fields if field.editable]
+
+        other_fields = [field.name for field in self.model._meta.fields if field.name not in common_fields and field.editable and field.name != 'id']
+        m2m_fields = [field.name for field in self.model._meta.many_to_many]
+        other_fields += m2m_fields
 
         fieldsets = [
-            (self.model._meta.object_name, {
+            (self.model._meta.verbose_name.title(), {
+                "classes": ["tab"],
                 'fields': other_fields,
-            }),
-            ('Meta Data', {
-                'fields': common_fields,
-            }),
+            })
         ]
 
+        if common_fields:
+            fieldsets.append(
+                (_("Meta Data"), {
+                    "classes": ["tab"],
+                    'fields': common_fields,
+                })
+            )
+
         return fieldsets
+    
     
     def get_readonly_fields(self, request, obj=None):
         # Get a list of non-editable fields
