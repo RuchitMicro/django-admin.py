@@ -127,7 +127,7 @@ class MyModel(models.Model):
         pass
 ```
 
-### JSON Editor Widget
+### JSON Editor Widget - Note: you have to install this dependency to use it [django-jsoneditor](https://pypi.org/project/django-jsoneditor/)
 The `JsonEditorWidget` class is used to render JSON fields with a user-friendly JSON editor:
 
 ```python
