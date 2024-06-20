@@ -8,6 +8,12 @@ from django.db                  import models
 # Imports for Dynamic app registrations
 from django.apps            import apps
 
+# Unfold 
+from unfold.admin                       import ModelAdmin
+from import_export.admin                import ImportExportModelAdmin
+from unfold.contrib.import_export.forms import ExportForm, ImportForm
+from django.utils.translation           import gettext_lazy as _
+
 
 # Common Model
 try:
@@ -20,7 +26,7 @@ except ImportError:
 # CONFIG CONSTANTS
 admin.site.site_header  = 'WOLFx Admin'
 exempt                  = [] # modelname in this list will not be registered
-global_app_name         = 'web' # Replace '' with your app name
+global_app_name         = 'api' # Replace '' with your app name
 
 
 
@@ -107,7 +113,10 @@ class GenericStackedAdmin(admin.StackedInline):
         return formset
 
 
-class GenericAdmin(admin.ModelAdmin):
+class GenericAdmin(ModelAdmin, ImportExportModelAdmin):
+    import_form_class = ImportForm
+    export_form_class = ExportForm
+    
     def __init__(self, model, admin_site):
         self.model = model
         self.inlines = []
